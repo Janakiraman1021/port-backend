@@ -9,6 +9,7 @@ const achievementRoutes = require('./routes/achievementRoutes');
 const skillRoutes = require('./routes/skillRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const internshipRoutes = require('./routes/InternshipRoutes');
+const certificationRoutes = require('./routes/certificationRoutes');
 
 dotenv.config();
 connectDB();
@@ -24,6 +25,7 @@ app.use('/api/achievements', achievementRoutes);
 app.use('/api/skills', skillRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api', internshipRoutes);
+app.use('/api/certifications', certificationRoutes);
 
 const PORT = process.env.PORT || 5000;
 
