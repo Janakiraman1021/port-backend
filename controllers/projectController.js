@@ -1,38 +1,50 @@
 const Project = require('../models/Project');
+const sharp = require('sharp');
 
 // Create a new project
 exports.createProject = async (req, res) => {
   try {
     const projects = Array.isArray(req.body) ? req.body : [req.body];
 
-    // Validate projects data
-    for (const project of projects) {
+    // Process and validate projects
+    const processedProjects = await Promise.all(projects.map(async project => {
+      // Validate required fields
       const { title, description, technologies } = project;
       if (!title || !description || !technologies) {
-        return res.status(400).json({
-          success: false,
-          message: 'Each project requires title, description, and technologies'
-        });
+        throw new Error('Each project requires title, description, and technologies');
       }
-    }
 
-    // Process projects with default values
-    const processedProjects = projects.map(project => ({
-      ...project,
-      githubUrl: project.githubUrl || '',
-      liveUrl: project.liveUrl || '',
-      image: project.image || ''
+      // Process image if exists
+      let processedImage = project.image;
+      if (project.image && project.image.startsWith('data:image')) {
+        const base64Data = project.image.split(';base64,').pop();
+        const imageBuffer = Buffer.from(base64Data, 'base64');
+        
+        // Compress and resize image
+        const compressedImage = await sharp(imageBuffer)
+          .resize(800, 600, { fit: 'inside' })
+          .jpeg({ quality: 80 })
+          .toBuffer();
+        
+        processedImage = `data:image/jpeg;base64,${compressedImage.toString('base64')}`;
+      }
+
+      return {
+        ...project,
+        githubUrl: project.githubUrl || '',
+        liveUrl: project.liveUrl || '',
+        image: processedImage
+      };
     }));
 
     const savedProjects = await Project.insertMany(processedProjects);
-
+    
     res.status(201).json({
       success: true,
       data: savedProjects
     });
   } catch (error) {
-    console.error('Project creation error:', error);
-    res.status(500).json({
+    res.status(400).json({
       success: false,
       message: error.message
     });
