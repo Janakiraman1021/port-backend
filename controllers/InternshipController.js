@@ -4,9 +4,8 @@ const Internship = require('../models/Internship');
 exports.createInternship = async (req, res) => {
   try {
     const internships = Array.isArray(req.body) ? req.body : [req.body];
-
     const savedInternships = await Internship.insertMany(internships);
-
+    
     res.status(201).json({
       success: true,
       data: savedInternships
@@ -15,7 +14,7 @@ exports.createInternship = async (req, res) => {
     console.error('Internship creation error:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message || 'Internal server error'
     });
   }
 };
@@ -26,12 +25,13 @@ exports.getInternships = async (req, res) => {
     const internships = await Internship.find().sort('-createdAt');
     res.status(200).json({
       success: true,
+      count: internships.length,
       data: internships
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message || 'Error fetching internships'
     });
   }
 };
@@ -49,28 +49,54 @@ exports.getInternshipById = async (req, res) => {
   }
 };
 
-// Update an internship by ID
+// Update internship
 exports.updateInternship = async (req, res) => {
   try {
-    const internship = await Internship.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const internship = await Internship.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    );
+    
     if (!internship) {
-      return res.status(404).json({ success: false, message: 'Internship not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'Internship not found'
+      });
     }
-    res.status(200).json({ success: true, data: internship });
-  } catch (err) {
-    res.status(400).json({ success: false, message: err.message });
+
+    res.status(200).json({
+      success: true,
+      data: internship
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
-// Delete an internship by ID
+// Delete internship
 exports.deleteInternship = async (req, res) => {
   try {
     const internship = await Internship.findByIdAndDelete(req.params.id);
+    
     if (!internship) {
-      return res.status(404).json({ success: false, message: 'Internship not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'Internship not found'
+      });
     }
-    res.status(200).json({ success: true, message: 'Internship deleted successfully' });
-  } catch (err) {
-    res.status(400).json({ success: false, message: err.message });
+
+    res.status(200).json({
+      success: true,
+      message: 'Internship deleted successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
