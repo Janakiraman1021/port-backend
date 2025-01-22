@@ -35,19 +35,20 @@ exports.createSkill = async (req, res) => {
 // Update skill
 exports.updateSkill = async (req, res) => {
   try {
+    const { id } = req.params;
     const { name, category, level } = req.body;
-    
-    // Validate input
+
     if (!name || !category || level === undefined) {
-      throw new Error('Name, category and level are required');
+      return res.status(400).json({ success: false, error: 'All fields required' });
     }
+
     if (level < 0 || level > 100) {
-      throw new Error('Level must be between 0 and 100');
+      return res.status(400).json({ success: false, error: 'Level must be 0-100' });
     }
 
     const skill = await Skill.findByIdAndUpdate(
-      req.params.id,
-      req.body,
+      id,
+      { name, category, level },
       { new: true, runValidators: true }
     );
 
@@ -57,7 +58,7 @@ exports.updateSkill = async (req, res) => {
 
     res.status(200).json({ success: true, data: skill });
   } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 };
 
@@ -79,8 +80,8 @@ exports.deleteSkill = async (req, res) => {
 // Get skills by category
 exports.getSkillsByCategory = async (req, res) => {
   try {
-    const skills = await Skill.find({ category: req.params.category })
-      .sort({ level: -1 });
+    const { category } = req.params;
+    const skills = await Skill.find({ category }).sort({ level: -1 });
     res.status(200).json({ success: true, data: skills });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Server Error' });
