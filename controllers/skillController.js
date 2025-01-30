@@ -4,31 +4,48 @@ const Skill = require('../models/Skill');
 exports.getSkills = async (req, res) => {
   try {
     const skills = await Skill.find().sort({ category: 1, level: -1 });
-    res.status(200).json({ success: true, data: skills });
-  } catch (err) {
-    res.status(500).json({ success: false, error: 'Server Error' });
+    res.status(200).json({
+      success: true,
+      data: skills
+    });
+  } catch (error) {
+    console.error('Get skills error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server Error'
+    });
   }
 };
 
 // Create new skill(s)
 exports.createSkill = async (req, res) => {
   try {
-    const skills = Array.isArray(req.body) ? req.body : [req.body];
-    
-    // Validate skills
-    skills.forEach(skill => {
+    const skillsData = req.body.skills || req.body;
+    const skills = Array.isArray(skillsData) ? skillsData : [skillsData];
+
+    // Basic validation
+    for (const skill of skills) {
       if (!skill.name || !skill.category || skill.level === undefined) {
-        throw new Error('Name, category and level are required');
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required fields'
+        });
       }
-      if (skill.level < 0 || skill.level > 100) {
-        throw new Error('Level must be between 0 and 100');
-      }
+    }
+
+    const createdSkills = await Skill.create(skills);
+    
+    res.status(201).json({
+      success: true,
+      data: createdSkills
     });
 
-    const savedSkills = await Skill.insertMany(skills);
-    res.status(201).json({ success: true, data: savedSkills });
-  } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
+  } catch (error) {
+    console.error('Create skill error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
   }
 };
 

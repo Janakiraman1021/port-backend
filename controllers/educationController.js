@@ -13,38 +13,18 @@ exports.getEducations = async (req, res) => {
 // Create a new education entry
 exports.createEducation = async (req, res) => {
   try {
-    console.log('Creating education entry:', req.body);
-
-    const { institution, degree, period, score } = req.body;
+    const educations = Array.isArray(req.body) ? req.body : [req.body];
+    const savedEducations = await Education.insertMany(educations);
     
-    if (!institution || !degree || !period || !score) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required fields'
-      });
-    }
-
-    const newEducation = new Education({
-      institution,
-      degree,
-      period,
-      score
-    });
-
-    const savedEducation = await newEducation.save();
-    console.log('Education saved:', savedEducation);
-
     res.status(201).json({
       success: true,
-      data: savedEducation
+      data: savedEducations
     });
-
   } catch (error) {
     console.error('Education creation error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to create education entry',
-      error: error.message
+      message: error.message
     });
   }
 };

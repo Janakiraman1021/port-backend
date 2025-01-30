@@ -1,56 +1,92 @@
 const Certification = require('../models/Certification');
 
-// Get all certifications
 exports.getCertifications = async (req, res) => {
-  try {
-    const certifications = await Certification.find();
-    res.status(200).json(certifications);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch certifications' });
-  }
+    try {
+        const certifications = await Certification.find().sort({ date: -1 });
+        res.status(200).json({
+            success: true,
+            data: certifications
+        });
+    } catch (error) {
+        console.error('Get certifications error:', error);
+        res.status(500).json({ success: false, error: 'Failed to fetch certifications' });
+    }
 };
 
-// Create a new certification
 exports.createCertification = async (req, res) => {
-  const { title, issuer, date, credentialUrl } = req.body;
-  try {
-    const newCertification = new Certification({ title, issuer, date, credentialUrl });
-    await newCertification.save();
-    res.status(201).json(newCertification);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to create certification' });
-  }
+    try {
+        const certifications = Array.isArray(req.body) ? req.body : [req.body];
+        
+        // Validate input
+        if (!certifications.length) {
+            return res.status(400).json({
+                success: false,
+                error: 'No certification data provided'
+            });
+        }
+
+        // Create all certifications
+        const createdCertifications = await Certification.insertMany(certifications);
+        
+        res.status(201).json({
+            success: true,
+            data: createdCertifications
+        });
+    } catch (error) {
+        console.error('Create certification error:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to create certification',
+            details: error.message 
+        });
+    }
 };
 
-// Update an existing certification
 exports.updateCertification = async (req, res) => {
-  const { id } = req.params;
-  const { title, issuer, date, credentialUrl } = req.body;
-  try {
-    const updatedCertification = await Certification.findByIdAndUpdate(
-      id,
-      { title, issuer, date, credentialUrl },
-      { new: true }
-    );
-    if (!updatedCertification) {
-      return res.status(404).json({ error: 'Certification not found' });
+    try {
+        const { id } = req.params;
+        const updateData = req.body;
+        
+        const certification = await Certification.findByIdAndUpdate(
+            id,
+            updateData,
+            { new: true, runValidators: true }
+        );
+
+        if (!certification) {
+            return res.status(404).json({
+                success: false,
+                error: 'Certification not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: certification
+        });
+    } catch (error) {
+        console.error('Update certification error:', error);
+        res.status(500).json({ success: false, error: 'Failed to update certification' });
     }
-    res.status(200).json(updatedCertification);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to update certification' });
-  }
 };
 
-// Delete a certification
 exports.deleteCertification = async (req, res) => {
-  const { id } = req.params;
-  try {
-    const deletedCertification = await Certification.findByIdAndDelete(id);
-    if (!deletedCertification) {
-      return res.status(404).json({ error: 'Certification not found' });
+    try {
+        const certification = await Certification.findByIdAndDelete(req.params.id);
+        
+        if (!certification) {
+            return res.status(404).json({
+                success: false,
+                error: 'Certification not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Certification deleted successfully'
+        });
+    } catch (error) {
+        console.error('Delete certification error:', error);
+        res.status(500).json({ success: false, error: 'Failed to delete certification' });
     }
-    res.status(200).json({ message: 'Certification deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to delete certification' });
-  }
 };
